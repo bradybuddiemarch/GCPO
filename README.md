@@ -1,8 +1,4 @@
-<h1 align="center">GCPO</h1>
-
-<h3 align="center">
-Breaking <i>Winner-Takes-All</i>: Cooperative Policy Optimization Improves Diverse LLM Reasoning
-</h3>
+<h1 align="center">Breaking <i>Winner-Takes-All</i>: Cooperative Policy Optimization Improves Diverse LLM Reasoning</h1>
 
 <p align="center">
   Haoxuan Chen &nbsp;&middot;&nbsp; Tianming Liang &nbsp;&middot;&nbsp; Wei-Shi Zheng &nbsp;&middot;&nbsp; Jian-Fang Hu<sup>*</sup><br>
@@ -17,8 +13,7 @@ Breaking <i>Winner-Takes-All</i>: Cooperative Policy Optimization Improves Diver
 </p>
 
 This repository provides the official training implementation of **Group
-Cooperative Policy Optimization (GCPO)**. The current release contains the
-Qwen3-4B recipe with a frozen external semantic encoder.
+Cooperative Policy Optimization (GCPO)**. 
 
 ## Overview
 
@@ -56,7 +51,7 @@ L_{ij} = r_i r_j \langle \hat{z}_i, \hat{z}_j \rangle,
 v(S) = \log \det(I + \eta L_S).
 $$
 
-The released recipe uses binary Math-Verify rewards, frozen
+The recipe uses binary Math-Verify rewards, frozen
 `sentence-transformers/all-MiniLM-L6-v2` embeddings, and exact Shapley credit
 assignment for the default group size of eight. Larger groups use the
 permutation-sampled estimator.
@@ -220,10 +215,11 @@ DAPO-Math-17K-Processed dataset.
 If you find this work useful, please cite:
 
 ```bibtex
-@misc{chen2026gcpo,
-  title  = {Breaking Winner-Takes-All: Cooperative Policy Optimization Improves Diverse LLM Reasoning},
-  author = {Haoxuan Chen and Tianming Liang and Wei-Shi Zheng and Jian-Fang Hu},
-  year   = {2026}
+@article{chen2026breaking,
+  title={Breaking $$\backslash$textit $\{$Winner-Takes-All$\}$ $: Cooperative Policy Optimization Improves Diverse LLM Reasoning},
+  author={Chen, Haoxuan and Liang, Tianming and Zheng, Wei-Shi and Hu, Jian-Fang},
+  journal={arXiv preprint arXiv:2605.11461},
+  year={2026}
 }
 ```
 
