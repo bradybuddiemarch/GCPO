@@ -13,6 +13,7 @@ Breaking <i>Winner-Takes-All</i>: Cooperative Policy Optimization Improves Diver
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-green.svg" alt="License: Apache-2.0"></a>
   <a href="https://github.com/volcengine/verl"><img src="https://img.shields.io/badge/VERL-v0.4.1-blue" alt="VERL v0.4.1"></a>
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
 </p>
 
 This repository provides the official training implementation of **Group
@@ -27,6 +28,25 @@ reasoning patterns. GCPO instead treats the responses sampled for one prompt as
 a team and assigns credit according to each response's contribution to the
 team's valid solution coverage.
 
+<p align="center">
+  <img src="assets/gcpo_framework.png" width="100%" alt="GCPO framework">
+</p>
+
+<p align="center"><i>
+GCPO estimates team-level solution coverage, assigns each rollout a Shapley
+credit, and redistributes the group reward before policy optimization.
+</i></p>
+
+GCPO has three stages:
+
+1. **Team value estimation.** Correctness-gated response embeddings define the
+   semantic volume covered by a rollout group.
+2. **Member credit assignment.** Shapley values measure each rollout's average
+   marginal contribution to the team value.
+3. **Reward redistribution.** The original group reward is redistributed by
+   cooperative credit, preserving the reward budget while favoring correct and
+   non-redundant reasoning paths.
+
 For binary verifier rewards $r_i$ and normalized semantic embeddings
 $\hat{z}_i$, GCPO builds the reward-gated kernel
 
@@ -36,18 +56,10 @@ L_{ij} = r_i r_j \langle \hat{z}_i, \hat{z}_j \rangle,
 v(S) = \log \det(I + \eta L_S).
 $$
 
-Shapley values measure each rollout's average marginal contribution to this
-team value. The original group reward is then redistributed according to these
-credits, preserving the reward budget while favoring correct and
-non-redundant reasoning paths.
-
-The implementation includes:
-
-- exact Shapley credit assignment for the default group size of eight;
-- permutation-sampled Shapley estimation for larger groups;
-- frozen `sentence-transformers/all-MiniLM-L6-v2` response embeddings;
-- binary answer verification with Math-Verify;
-- integration with VERL v0.4.1 through a small, pinned patch.
+The released recipe uses binary Math-Verify rewards, frozen
+`sentence-transformers/all-MiniLM-L6-v2` embeddings, and exact Shapley credit
+assignment for the default group size of eight. Larger groups use the
+permutation-sampled estimator.
 
 ## Installation
 
