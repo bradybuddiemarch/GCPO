@@ -41,19 +41,7 @@ GCPO has three stages:
    cooperative credit, preserving the reward budget while favoring correct and
    non-redundant reasoning paths.
 
-For binary verifier rewards $r_i$ and normalized semantic embeddings
-$\hat{z}_i$, GCPO builds the reward-gated kernel
-
-$$
-L_{ij} = r_i r_j \langle \hat{z}_i, \hat{z}_j \rangle,
-\qquad
-v(S) = \log \det(I + \eta L_S).
-$$
-
-The recipe uses binary Math-Verify rewards, frozen
-`sentence-transformers/all-MiniLM-L6-v2` embeddings, and exact Shapley credit
-assignment for the default group size of eight. Larger groups use the
-permutation-sampled estimator.
+GCPO couples correctness and diversity at the **group level**. By redistributing the original group reward according to each rollout's Shapley contribution, GCPO preserves the task objective and guides policy optimization toward distinct correct reasoning paths.
 
 ## Installation
 
