@@ -3,7 +3,6 @@
 <p align="center">
   Haoxuan Chen &nbsp;&middot;&nbsp; Tianming Liang &nbsp;&middot;&nbsp; Wei-Shi Zheng &nbsp;&middot;&nbsp; Jian-Fang Hu<sup>*</sup><br>
   ISEE Lab, Sun Yat-sen University<br>
-  <sup>*</sup>Corresponding author
 </p>
 
 <p align="center">
