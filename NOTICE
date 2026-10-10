@@ -1,0 +1,12 @@
+GCPO
+Copyright 2026 Haoxuan Chen, Tianming Liang, Wei-Shi Zheng, and Jian-Fang Hu
+
+This product includes an integration patch and interfaces designed for VERL,
+Copyright 2024 ByteDance Ltd. and/or its affiliates, licensed under the Apache
+License, Version 2.0. The upstream project is available at
+https://github.com/volcengine/verl.
+
+This product depends on Math-Verify and Sentence Transformers. Training recipes
+refer to Qwen3 model weights, DAPO-Math-17K-Processed, and AIME-2024 data. These
+third-party packages, models, and datasets are not redistributed by this
+repository and remain governed by their respective licenses and terms.

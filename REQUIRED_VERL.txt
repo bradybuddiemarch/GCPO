@@ -1,0 +1,4 @@
+VERL_REPOSITORY=https://github.com/volcengine/verl.git
+VERL_TAG=v0.4.1
+VERL_COMMIT=8d9e350ea58c7ad4b50dd14d9dcb50577242c55f
+

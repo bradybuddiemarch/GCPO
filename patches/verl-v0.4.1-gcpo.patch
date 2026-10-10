@@ -1,0 +1,129 @@
+diff --git a/verl/trainer/ppo/ray_trainer.py b/verl/trainer/ppo/ray_trainer.py
+index 73395804..e7fec3b2 100644
+--- a/verl/trainer/ppo/ray_trainer.py
++++ b/verl/trainer/ppo/ray_trainer.py
+@@ -36,6 +36,8 @@ from torch.utils.data import Dataset, Sampler
+ from torchdata.stateful_dataloader import StatefulDataLoader
+ from tqdm import tqdm
+ 
++from gcpo import estimator as _gcpo_estimator  # noqa: F401
++from gcpo.encoder import encode_responses, load_frozen_encoder
+ from verl import DataProto
+ from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
+ from verl.single_controller.base import Worker
+@@ -62,6 +64,10 @@ from verl.utils.tracking import ValidationGenerationsLogger
+ WorkerType = Type[Worker]
+ 
+ 
++def _adv_estimator_name(adv_estimator) -> str:
++    return adv_estimator.value if isinstance(adv_estimator, Enum) else str(adv_estimator)
++
++
+ class Role(Enum):
+     """
+     To create more roles dynamically, you can subclass Role and add new members
+@@ -266,6 +272,8 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
+             adv_kwargs["index"] = data.non_tensor_batch["uid"]
+         if "reward_baselines" in data.batch:  # optional
+             adv_kwargs["reward_baselines"] = data.batch["reward_baselines"]
++        if "response_embeddings" in data.batch:
++            adv_kwargs["response_embeddings"] = data.batch["response_embeddings"]
+ 
+         # calculate advantage estimator
+         advantages, returns = adv_estimator_fn(**adv_kwargs)
+@@ -342,24 +350,64 @@ class RayPPOTrainer:
+         if config.algorithm.use_kl_in_reward:
+             self.kl_ctrl_in_reward = core_algos.get_kl_controller(config.algorithm.kl_ctrl)
+ 
++        adv_estimator_name = _adv_estimator_name(self.config.algorithm.adv_estimator)
+         if self.config.algorithm.adv_estimator == AdvantageEstimator.GAE:
+             self.use_critic = True
+-        elif self.config.algorithm.adv_estimator in [
+-            AdvantageEstimator.GRPO,
+-            AdvantageEstimator.GRPO_PASSK,
+-            AdvantageEstimator.REINFORCE_PLUS_PLUS,
+-            AdvantageEstimator.REMAX,
+-            AdvantageEstimator.RLOO,
+-            AdvantageEstimator.OPO,
+-            AdvantageEstimator.REINFORCE_PLUS_PLUS_BASELINE,
+-        ]:
++        elif (
++            adv_estimator_name == "gcpo"
++            or self.config.algorithm.adv_estimator
++            in [
++                AdvantageEstimator.GRPO,
++                AdvantageEstimator.GRPO_PASSK,
++                AdvantageEstimator.REINFORCE_PLUS_PLUS,
++                AdvantageEstimator.REMAX,
++                AdvantageEstimator.RLOO,
++                AdvantageEstimator.OPO,
++                AdvantageEstimator.REINFORCE_PLUS_PLUS_BASELINE,
++            ]
++        ):
+             self.use_critic = False
+         else:
+             raise NotImplementedError
+ 
++        self.gcpo_encoder = None
++        if adv_estimator_name == "gcpo":
++            if config.algorithm.use_kl_in_reward:
++                raise ValueError(
++                    "Paper-faithful GCPO requires algorithm.use_kl_in_reward=false"
++                )
++            if not config.algorithm.get("use_sentence_transformer", False):
++                raise ValueError(
++                    "GCPO requires algorithm.use_sentence_transformer=true"
++                )
++            encoder_path = config.algorithm.get("sentence_transformer_model")
++            if not encoder_path:
++                raise ValueError(
++                    "GCPO requires algorithm.sentence_transformer_model"
++                )
++            encoder_device = config.algorithm.get(
++                "sentence_transformer_device", "cpu"
++            )
++            self.gcpo_encoder = load_frozen_encoder(
++                model_path=encoder_path,
++                device=encoder_device,
++            )
++
+         self._validate_config()
+         self._create_dataloader(train_dataset, val_dataset, collate_fn, train_sampler)
+ 
++    def _generate_gcpo_embeddings(self, data: DataProto) -> torch.Tensor:
++        if self.gcpo_encoder is None:
++            raise RuntimeError("GCPO semantic encoder is not initialized")
++        return encode_responses(
++            model=self.gcpo_encoder,
++            tokenizer=self.tokenizer,
++            response_ids=data.batch["responses"],
++            batch_size=self.config.algorithm.get(
++                "sentence_transformer_batch_size", 128
++            ),
++        )
++
+     def _validate_config(self):
+         config = self.config
+         # number of GPUs total
+@@ -1100,6 +1148,12 @@ class RayPPOTrainer:
+                         else:
+                             batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
+ 
++                        if _adv_estimator_name(self.config.algorithm.adv_estimator) == "gcpo":
++                            with marked_timer("gcpo_embeddings", timing_raw, color="cyan"):
++                                batch.batch["response_embeddings"] = (
++                                    self._generate_gcpo_embeddings(batch)
++                                )
++
+                         # compute advantages, executed on the driver process
+ 
+                         norm_adv_by_std_in_grpo = self.config.algorithm.get("norm_adv_by_std_in_grpo", True)  # GRPO adv normalization factor
+@@ -1114,6 +1168,8 @@ class RayPPOTrainer:
+                             multi_turn=self.config.actor_rollout_ref.rollout.multi_turn.enable,
+                             config=self.config.algorithm,
+                         )
++                        if "response_embeddings" in batch.batch:
++                            batch.batch.pop("response_embeddings")
+ 
+                     # update critic
+                     if self.use_critic:
